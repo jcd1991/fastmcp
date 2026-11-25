@@ -410,10 +410,23 @@ def _reject_non_finite_json_number(value: str) -> NoReturn:
     raise ValueError(f"Non-finite JSON number {value!r} is not supported")
 
 
+def _parse_finite_json_float(value: str) -> float:
+    """Parse a JSON float while rejecting values that overflow to infinity."""
+
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        _reject_non_finite_json_number(value)
+    return parsed
+
+
 def _load_cli_json(raw: str) -> Any:
     """Parse CLI JSON while rejecting non-standard non-finite numbers."""
 
-    return json.loads(raw, parse_constant=_reject_non_finite_json_number)
+    return json.loads(
+        raw,
+        parse_constant=_reject_non_finite_json_number,
+        parse_float=_parse_finite_json_float,
+    )
 
 
 def coerce_value(raw: str, schema: dict[str, Any]) -> Any:

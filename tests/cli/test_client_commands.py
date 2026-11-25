@@ -89,6 +89,11 @@ class TestCoerceValue:
         with pytest.raises(ValueError, match="Expected JSON array"):
             coerce_value("not-json", {"type": "array"})
 
+    @pytest.mark.parametrize("raw", ["[1e400]", "[-1e400]"])
+    def test_array_rejects_overflowing_numbers(self, raw):
+        with pytest.raises(ValueError, match="Non-finite JSON number"):
+            coerce_value(raw, {"type": "array"})
+
     def test_object(self):
         assert coerce_value('{"a": 1}', {"type": "object"}) == {"a": 1}
 
@@ -292,6 +297,11 @@ class TestParseToolArguments:
 
     @pytest.mark.parametrize("raw", ['{"query": NaN}', '{"query": Infinity}'])
     def test_input_json_rejects_non_finite_numbers(self, raw):
+        with pytest.raises(SystemExit):
+            parse_tool_arguments((), raw, self.SCHEMA)
+
+    @pytest.mark.parametrize("raw", ['{"query": 1e400}', '{"query": -1e400}'])
+    def test_input_json_rejects_overflowing_numbers(self, raw):
         with pytest.raises(SystemExit):
             parse_tool_arguments((), raw, self.SCHEMA)
 
